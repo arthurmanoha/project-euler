@@ -1,14 +1,16 @@
 package tools;
 
+import static java.lang.Math.max;
+
 /**
  *
  * @author arthu
  */
 public class TabInteger {
 
-    private int[] tab;
-    private int initSize = 4;
-    private int printGroupSize = 4; // How many digits are kept together when printing
+    private int[] tab; // Stores chunks of the number, unit chunk is at position zero.
+    private int nbBlocks = 1;
+    private int nbDigitsPerGroup = 4; // How many digits are kept together when printing
     private int maxCellValue = 10000; //(int) Math.sqrt(Integer.MAX_VALUE);
     private boolean mustSplit = false; // Separate at powers of 1000 or 10000 when printing
 
@@ -22,7 +24,7 @@ public class TabInteger {
     }
 
     private void initTab(int initialValue) {
-        tab = new int[initSize];
+        tab = new int[nbBlocks];
         for (int rank = 0; rank < tab.length; rank++) {
             tab[rank] = 0;
         }
@@ -30,8 +32,8 @@ public class TabInteger {
         carry();
     }
 
-    private void setInitSize(int newSize) {
-        initSize = newSize;
+    public void setInitSize(int newNbDigits) {
+        nbBlocks = newNbDigits / nbDigitsPerGroup + 1;
         initTab(0);
     }
 
@@ -70,9 +72,6 @@ public class TabInteger {
             s = addLeadingZeroes(s, tab[rank]);
             s += tab[rank];
         }
-//        while (s.charAt(0) == '0') {
-//            s = s.substring(1);
-//        }
         if (mustSplit) {
             s = splitInGroups(s);
         }
@@ -91,7 +90,7 @@ public class TabInteger {
     private String splitInGroups(String s) {
         String result = "";
         for (int rank = s.length() - 1; rank >= 0; rank--) {
-            if (((s.length() - rank) - 1) % printGroupSize == 0 && (s.length() != rank + 1)) {
+            if (((s.length() - rank) - 1) % nbDigitsPerGroup == 0 && (s.length() != rank + 1)) {
                 result = "." + result;
             }
             result = s.charAt(rank) + result;
@@ -106,7 +105,6 @@ public class TabInteger {
      * @param value
      */
     private String addLeadingZeroes(String s, int value) {
-//        System.out.println("addLeadingZeroes: " + s + "      " + value);
         if (value <= 999) {
             s += "0";
         }
@@ -116,7 +114,6 @@ public class TabInteger {
         if (value <= 9) {
             s += "0";
         }
-//        System.out.println("after, s: " + s);
         return s;
     }
 
@@ -135,15 +132,27 @@ public class TabInteger {
     /**
      * Add another TabInteger to this TabInteger
      *
-     * @param p
+     * @param other
      * @return
      */
-    public TabInteger sum(TabInteger p) {
-        TabInteger sum = new TabInteger(this);
-        for (int rank = 0; rank < tab.length; rank++) {
-            sum.tab[rank] = this.tab[rank] + p.tab[rank];
+    public TabInteger sum(TabInteger other) {
+        TabInteger sum = new TabInteger(0);
+
+        int nbDigitsThis = this.getNbSignificantDigits();
+        int nbDigitsOther = other.getNbSignificantDigits();
+        int nbDigitsSum = max(nbDigitsThis, nbDigitsOther) + 1;
+        sum.setInitSize(nbDigitsSum);
+
+        for (int rank = 0; rank < sum.nbBlocks; rank++) {
+            if (rank < this.nbBlocks) {
+                sum.tab[rank] += this.tab[rank];
+            }
+            if (rank < other.nbBlocks) {
+                sum.tab[rank] += other.tab[rank];
+            }
         }
         sum.carry();
+
         return sum;
     }
 
@@ -166,14 +175,30 @@ public class TabInteger {
     /**
      * Multiply this TabInteger by another TabInteger.
      *
-     * @param n
+     * @param other
      * @return another TabInteger equal to this TabInt multiplied by the
      * specified TabInteger.
      */
-    public TabInteger mult(TabInteger n) {
-        int minSize = this.getNbSignificantDigits() + n.getNbSignificantDigits() + 1;
-        // TODO
-        return this;
+    public TabInteger mult(TabInteger other) {
+        int nbDigitsThis = this.getNbSignificantDigits();
+        int nbDigitsOther = other.getNbSignificantDigits();
+        int maxNbDigitsProduct = nbDigitsThis + nbDigitsOther;
+
+        TabInteger result = new TabInteger(0);
+        result.setInitSize(maxNbDigitsProduct);
+
+        for (int i = 0; i < this.tab.length; i++) {
+            int a = this.tab[i];
+            for (int j = 0; j < other.tab.length; j++) {
+                int b = other.tab[j];
+                if (i + j < result.tab.length) {
+                    result.tab[i + j] += a * b;
+                }
+            }
+            result.carry();
+        }
+
+        return result;
     }
 
     /**
@@ -182,16 +207,27 @@ public class TabInteger {
      *
      * @return the number of significant digits
      */
-    private int getNbSignificantDigits() {
-        int result = tab.length * printGroupSize;
+    public int getNbSignificantDigits() {
+        int result = tab.length * nbDigitsPerGroup;
 
-        int rank = tab.length - 1;
-        while (rank >= 0 && tab[rank] == 0) {
-            result -= printGroupSize;
+        int rank = tab.length;
+        // Eliminate empty blocks
+        do {
+            result -= nbDigitsPerGroup;
             rank--;
-        }
+        } while (rank >= 0 && tab[rank] == 0);
 
-        return result;
+        if (rank < 0) {
+            // Special case for number 0
+            return 0;
+        } else {
+            // All non-zero numbers
+            // Block at this rank contains the first non-zero leading digit
+            int nbNonzeroDigitsInFirstBlock = (int) Math.log10(tab[rank]) + 1;
+
+            result += nbNonzeroDigitsInFirstBlock;
+            return result;
+        }
     }
 
     /**
@@ -206,5 +242,20 @@ public class TabInteger {
         }
         tab = newTab;
         carry();
+    }
+
+    /**
+     * Elevates this TabInteger to the specified integer power.
+     *
+     * @param pow the power that this TabInteger is being raised to
+     * @return this TabInteger raised to the specified power
+     */
+    public TabInteger power(int pow) {
+
+        if (pow <= 0) {
+            return new TabInteger(1);
+        }
+        TabInteger result = this.mult(power(pow - 1));
+        return result;
     }
 }
