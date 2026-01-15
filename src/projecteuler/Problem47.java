@@ -1,125 +1,145 @@
 package projecteuler;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author arthu
  */
 public class Problem47 {
 
+    int nbPrimalityTests = 0;
+    int highestPrimeInList = 0;
+    int highestIntegerTested = 0;
+
+    ArrayList<Integer> allPrimes = new ArrayList<>();
+    ArrayList<Integer> nbPrimeFactorList = new ArrayList<>();
+
     public Problem47() {
     }
 
     public void solve() {
-        // Find the first 4 consecutive numbers to have four distinct prime factors
-        int nbIntegers = 4;
 
-        int n = 1;
+        int max = 1000000;
+        int nbOfRanks = 4;
 
+        int n = 0;
         boolean found = false;
-        while (!found) {
+        while (!found && n < max) {
+            int res = getNbDistinctPrimeFactors(n);
+            nbPrimeFactorList.add(res);
 
-            int nbDistinctFactors[] = getDistinctPrimeFactors(n, nbIntegers);
-
-//            // Display values:
-            if (1000 * (n / 1000) == n) {
-                for (int i = 0; i < nbDistinctFactors.length; i++) {
-                    System.out.println((n + i) + ": " + nbDistinctFactors[i] + " distinct factors.");
+            try {
+                found = true;
+                for (int k = 0; k < nbOfRanks; k++) {
+                    if (nbPrimeFactorList.get(n - k) != nbOfRanks) {
+                        found = false;
+                    }
                 }
-                System.out.println("");
+                if (found) {
+                    System.out.println("yolo " + (n - nbOfRanks + 1));
+                    for (int k = 0; k < nbOfRanks; k++) {
+                        System.out.println(" " + (n - k) + " has " + getNbDistinctPrimeFactors(n - k) + " divisors : "
+                                + getAllPrimeFactors(n - k));
+                    }
+                }
+            } catch (IndexOutOfBoundsException e) {
             }
 
-            // If the numbers of distinct prime factors are non-zero and all the same,
-            // then we found it.
-            found = true;
-            for (int pos = 0; pos < nbIntegers - 1; pos++) {
-                // Check that both number have the requested amount of distinct prime factors.
-                if (nbDistinctFactors[pos] != nbIntegers
-                        || nbDistinctFactors[pos + 1] != nbIntegers) {
-                    // At least one value does not have the right amount of distinct prime factors.
-                    found = false;
-                }
+            if (10000 * (n / 10000) == n) {
+                System.out.println(n + ": " + res);
             }
-            if (found) {
-                System.out.print(nbIntegers + " distinct prime factors for ");
-                for (int value = n; value < n + nbIntegers; value++) {
-                    System.out.print(value + " ");
-                }
-                System.out.println();
-            }
-
             n++;
         }
     }
 
-    /**
-     * Return the list of the number of factors for n and the following
-     * integers.
-     *
-     * @param firstValue
-     * @param nbIntegers
-     * @return how many prime factors the number has, other than itself (or 0 if
-     * n is prime).
-     */
-    private int[] getDistinctPrimeFactors(int firstValue, int nbIntegers) {
-
-        int nbFactors[] = new int[nbIntegers];
-        for (int n = firstValue; n < firstValue + nbIntegers; n++) {
-            nbFactors[n - firstValue] = getNbDistinctPrimeFactors(n);
+    // Make sure we know all primes below n
+    private void fillPrimeList(int n) {
+        if (highestIntegerTested < n) {
+            for (int k = highestIntegerTested + 1; k <= n; k++) {
+                if (isPrime(k) && !allPrimes.contains(k)) {
+                    allPrimes.add(k);
+                    highestPrimeInList = k;
+                }
+            }
+            highestIntegerTested = n;
         }
-        return nbFactors;
     }
 
-    /**
-     * Get the number of distinct factors of a given integer.
-     *
-     * @param n an integer
-     * @return how many distinct factors n has.
-     */
-    private int getNbDistinctPrimeFactors(int n) {
-        int nbPrimeFactors = 0;
+    private String getAllPrimeFactors(int n) {
 
-        int div = 2;
-        while (div < n) {
-            if (div * (n / div) == n) {
-                // div is another prime factor of n
+        fillPrimeList(n);
+        String result = "";
+
+        for (int p : allPrimes) {
+            if (p * (n / p) == n) {
+                result += " - " + p;
+            }
+        }
+        return result;
+    }
+
+    private int getNbDistinctPrimeFactors(int n) {
+
+        fillPrimeList(n);
+
+        int nbPrimeFactors = 0;
+        for (int p : allPrimes) {
+            if (p * (n / p) == n) {
                 nbPrimeFactors++;
             }
-            div = getNextPrime(div);
         }
+
         return nbPrimeFactors;
     }
 
-    /**
-     * Get the smallest prime strictly greater than n
-     *
-     * @param n
-     * @return
-     */
-    private int getNextPrime(int n) {
-        int candidate = n + 1;
-        while (!isPrime(candidate)) {
-            candidate++;
-        }
-        return candidate;
+    private boolean isInList(int value, ArrayList<Integer> list) {
+        return list.indexOf(value) != -1;
     }
 
+    // Test if a number is prime, using the list if we can
     private boolean isPrime(int n) {
-        if (n <= 1) {
-            return false;
-        }
-        if (n <= 3) {
-            return true;
-        }
-        if (2 * (n / 2) == n) {
-            return false;
-        }
-        int div = 3;
-        do {
-            if (div * (n / div) == n) {
-                return false;
+
+        if (n > highestPrimeInList) {
+            // Test all remaining numbers, including n, and add all the new primes to the list.
+            for (int p = highestPrimeInList + 1; p <= n; p++) {
+                if (longPrimeTest(p)) {
+                    if (!isInList(p, allPrimes)) {
+                        allPrimes.add(p);
+                        highestPrimeInList = p;
+                    }
+                }
             }
-            div++;
-        } while (div <= n / 2);
-        return true;
+        }
+        return quickPrimeTest(n);
+    }
+
+    // Test if a number is prime, with a shortcut: if n is in the list, then it is prime.
+    private boolean quickPrimeTest(int n) {
+        return isInList(n, allPrimes);
+    }
+
+    // Test if a number is prime by testing its divisors.
+    private boolean longPrimeTest(int n) {
+        boolean isPrime = true;
+        if (n < 2) {
+            isPrime = false;
+        } else if (n <= 3) {
+            isPrime = true;
+        } else if (2 * (n / 2) == n) {
+            isPrime = false;
+        } else {
+            // QUICK WAY: testing only listed divisors.
+            int divRank = 0;
+            while (divRank < allPrimes.size()) {
+                int div = allPrimes.get(divRank);
+                if (div * (n / div) == n) {
+                    isPrime = false;
+                }
+                divRank++;
+            }
+        }
+
+        return isPrime;
     }
 }
