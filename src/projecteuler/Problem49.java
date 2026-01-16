@@ -1,6 +1,9 @@
 package projecteuler;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -19,13 +22,43 @@ public class Problem49 {
     public void solve() {
         System.out.println("Problem 49");
 
-        ArrayList<Integer> list = new ArrayList<>();
-        list.add(1);
-        list.add(2);
-        list.add(3);
-        list.add(4);
+        for (int value = 1000; value < 9999; value++) {
+            solve(value);
+        }
+    }
 
-        // Return true if that number has two permutations that are prime and that form an arithmetic sequence
+    private void solve(int value) {
+
+        ArrayList<Integer> permutations = getPermutations(value);
+        Collections.sort(permutations);
+
+        // Remove duplicates
+        Set<Integer> set = new HashSet(permutations);
+        permutations.clear();
+        permutations.addAll(set);
+        permutations.removeIf(n -> !isPrime(n));
+
+        // Return true if two of these prime permutations form an arithmetic sequence
+        for (int index0 = 0; index0 < permutations.size(); index0++) {
+            int val0 = permutations.get(index0);
+            for (int index1 = index0 + 1; index1 < permutations.size(); index1++) {
+                int val1 = permutations.get(index1);
+                // Search for a third number in the list (already prime) that follows in an arithmetic progression
+                int commonDifference = val1 - val0;
+                if (commonDifference != 0) {
+                    for (int index2 = index1 + 1; index2 < permutations.size(); index2++) {
+                        int val2 = permutations.get(index2);
+                        if (val2 - val1 == commonDifference) {
+                            // Found the final result
+                            if (value == val0) {
+                                System.out.println("The three values are " + val0 + ", " + val1 + ", " + val2 + ".");
+                                System.out.println("Final result: " + val0 + val1 + val2 + ".");
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Find out whether a number is prime by testing 2 and all even divisors.
@@ -122,6 +155,12 @@ public class Problem49 {
         return result;
     }
 
+    /**
+     * Compute all the permutations of a given list
+     *
+     * @param list
+     * @return the meta-list of all permutations
+     */
     private ArrayList<ArrayList<Integer>> getPermutations(ArrayList<Integer> list) {
 
         ArrayList<ArrayList<Integer>> result = new ArrayList<>();
@@ -139,6 +178,57 @@ public class Problem49 {
             result = insertEverywhereInAllLists(head, getPermutations(tail));
         }
 
+        return result;
+    }
+
+    /**
+     * Compute the permutations of the digits of a number
+     *
+     * @param val
+     * @return the list of all the integers that we can get through permutation
+     * of the digits
+     */
+    private ArrayList<Integer> getPermutations(int val) {
+
+        ArrayList<Integer> result = new ArrayList<>();
+
+        ArrayList<Integer> listOfDigits = intToList(val);
+        ArrayList<ArrayList<Integer>> permutations = getPermutations(listOfDigits);
+        for (ArrayList<Integer> singlePermutation : permutations) {
+            int numberPermutation = listToInt(singlePermutation);
+            result.add(numberPermutation);
+        }
+        return result;
+    }
+
+    /**
+     * Convert an integer into the list of its digits in base ten.
+     *
+     * @param val
+     * @return
+     */
+    private ArrayList<Integer> intToList(int val) {
+        ArrayList<Integer> result = new ArrayList<>();
+        while (val > 0) {
+            int units = val - 10 * (val / 10);
+            result.add(0, units);
+            val = val / 10;
+        }
+        return result;
+    }
+
+    /**
+     * Convert a list of digits into a single integer.
+     * The corresponding integer must be within <int> bounds.
+     *
+     * @param list
+     * @return
+     */
+    private int listToInt(ArrayList<Integer> list) {
+        int result = 0;
+        while (!list.isEmpty()) {
+            result = 10 * result + list.remove(0);
+        }
         return result;
     }
 }
