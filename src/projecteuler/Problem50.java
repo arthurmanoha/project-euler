@@ -1,125 +1,80 @@
 package projecteuler;
 
+import java.util.ArrayList;
+import tools.PrimeTester;
+
 /**
  *
  * @author arthu
  */
-public class Problem47 {
+public class Problem50 {
 
-    public Problem47() {
+    PrimeTester primeTester;
+
+    public Problem50() {
+        primeTester = new PrimeTester();
     }
 
     public void solve() {
-        // Find the first 4 consecutive numbers to have four distinct prime factors
-        int nbIntegers = 4;
 
-        int n = 1;
+//        int n = 41;
+//        int n = 953;
+        int upperBound = 1000000;
+        int recordLength = 0;
+        primeTester.fillPrimeList(upperBound);
 
-        boolean found = false;
-        while (!found) {
-
-            int nbDistinctFactors[] = getDistinctPrimeFactors(n, nbIntegers);
-
-//            // Display values:
-            if (1000 * (n / 1000) == n) {
-                for (int i = 0; i < nbDistinctFactors.length; i++) {
-                    System.out.println((n + i) + ": " + nbDistinctFactors[i] + " distinct factors.");
-                }
-                System.out.println("");
-            }
-
-            // If the numbers of distinct prime factors are non-zero and all the same,
-            // then we found it.
-            found = true;
-            for (int pos = 0; pos < nbIntegers - 1; pos++) {
-                // Check that both number have the requested amount of distinct prime factors.
-                if (nbDistinctFactors[pos] != nbIntegers
-                        || nbDistinctFactors[pos + 1] != nbIntegers) {
-                    // At least one value does not have the right amount of distinct prime factors.
-                    found = false;
-                }
-            }
-            if (found) {
-                System.out.print(nbIntegers + " distinct prime factors for ");
-                for (int value = n; value < n + nbIntegers; value++) {
-                    System.out.print(value + " ");
-                }
-                System.out.println();
-            }
-
-            n++;
-        }
-    }
-
-    /**
-     * Return the list of the number of factors for n and the following
-     * integers.
-     *
-     * @param firstValue
-     * @param nbIntegers
-     * @return how many prime factors the number has, other than itself (or 0 if
-     * n is prime).
-     */
-    private int[] getDistinctPrimeFactors(int firstValue, int nbIntegers) {
-
-        int nbFactors[] = new int[nbIntegers];
-        for (int n = firstValue; n < firstValue + nbIntegers; n++) {
-            nbFactors[n - firstValue] = getNbDistinctPrimeFactors(n);
-        }
-        return nbFactors;
-    }
-
-    /**
-     * Get the number of distinct factors of a given integer.
-     *
-     * @param n an integer
-     * @return how many distinct factors n has.
-     */
-    private int getNbDistinctPrimeFactors(int n) {
-        int nbPrimeFactors = 0;
-
-        int div = 2;
-        while (div < n) {
-            if (div * (n / div) == n) {
-                // div is another prime factor of n
-                nbPrimeFactors++;
-            }
-            div = getNextPrime(div);
-        }
-        return nbPrimeFactors;
-    }
-
-    /**
-     * Get the smallest prime strictly greater than n
-     *
-     * @param n
-     * @return
-     */
-    private int getNextPrime(int n) {
-        int candidate = n + 1;
-        while (!isPrime(candidate)) {
-            candidate++;
-        }
-        return candidate;
-    }
-
-    private boolean isPrime(int n) {
-        if (n <= 1) {
-            return false;
-        }
-        if (n <= 3) {
-            return true;
-        }
-        if (2 * (n / 2) == n) {
-            return false;
-        }
-        int div = 3;
+        int rank = 0;
+        int n;
         do {
-            if (div * (n / div) == n) {
-                return false;
+            n = primeTester.getAllPrimes().get(rank);
+            int length = decomposeIntoPrimes(n);
+            if (length > recordLength) {
+                System.out.println(n + ": " + length);
+                recordLength = length;
             }
-            div++;
-        } while (div <= n / 2);
-        return true;
+            rank++;
+        } while (n < upperBound && rank < primeTester.getAllPrimes().size());
+    }
+
+    private int decomposeIntoPrimes(int n) {
+        primeTester.fillPrimeList(n);
+
+        int firstRank = 0; // The rank of the first prime of the sum
+        int lastRank = firstRank; // The rank of the last prime of the sum
+
+        final ArrayList<Integer> allPrimes = primeTester.getAllPrimes();
+
+        int firstPrime = allPrimes.get(firstRank);
+        int lastPrime = allPrimes.get(lastRank);
+        int sum = firstPrime;
+        // At startup, the first and last prime considered is TWO, and the sum is 2;
+
+        while (lastRank < allPrimes.size() - 1 && lastPrime < n && sum != n) {
+
+            if (sum < n) {
+                // Need to add at one bigger prime
+                lastRank++;
+                lastPrime = allPrimes.get(lastRank);
+                sum += lastPrime;
+            }
+            if (sum > n) {
+                // Need to remove one smaller prime
+                sum -= firstPrime;
+                firstRank++;
+                firstPrime = allPrimes.get(firstRank);
+            }
+
+        }
+        if (sum == n && firstPrime != lastPrime) {
+            // Found solution
+//            for (int rank = firstRank; rank <= lastRank; rank++) {
+//                System.out.print(allPrimes.get(rank) + " + ");
+//            }
+//            System.out.println("= " + n);
+            int numberOfTerms = lastRank - firstRank + 1;
+            return numberOfTerms;
+        } else {
+            return 0;
+        }
     }
 }
