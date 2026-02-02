@@ -1,0 +1,22 @@
+Elements of comparison (in order):
+
+royal flush:
+	rank (1)
+straight flush (sequence + same suit):
+	rank; value of highest card (2)
+4oak:
+	rank; value of the multiple card; (value of the other card) (3)
+full house (3oak + pair)
+	rank; value of the 3oak; (value of the pair) (3)
+flush (same suit):
+	rank; highest card; 2nd highest; 3rd highest; 4th highest; 5th highest (6)
+straight (sequence)
+	rank; value of highest card (1)
+3oak:
+	rank; value of the triple card; (value of the highest other card; value of the lowest other card) (4)
+two pairs:
+	rank; value of the highest pair: value of the lowest pair; value of the last card (4)
+one pair:
+	rank; value of the double card; value of the highest other card; value of the middle other card; value of the lowest other card (5)
+high card:
+	rank; value of the highest card; 2nd high card; 3rd high card; 4th high card; 5th high card (6)

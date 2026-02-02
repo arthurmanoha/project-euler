@@ -19,7 +19,8 @@ public class ProjectEuler {
 //        new Problem49().solve();
 //        new Problem50().solve();
 //        new Numberphile().solve();
-        new Problem52().solve();
+//        new Problem52().solve();
+        new Problem54().solve();
     }
 
 }
