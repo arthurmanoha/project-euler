@@ -20,7 +20,8 @@ public class ProjectEuler {
 //        new Problem50().solve();
 //        new Numberphile().solve();
 //        new Problem52().solve();
-        new Problem54().solve();
+//        new Problem54().solve();
+        new Problem53().solve();
     }
 
 }

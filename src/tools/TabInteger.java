@@ -54,7 +54,7 @@ public class TabInteger {
      */
     private void carry() {
         for (int k = 0; k < tab.length - 1; k++) {
-            if (tab[k] > maxCellValue) {
+            if (tab[k] >= maxCellValue) {
                 tab[k + 1] += tab[k] / maxCellValue;
                 tab[k] = tab[k] % maxCellValue;
             }
@@ -234,7 +234,10 @@ public class TabInteger {
      * Replace the array with a longer one and copy the previous values.
      */
     private void expandTab() {
-        int nbNewCells = 1;
+        expandTab(1);
+    }
+
+    private void expandTab(int nbNewCells) {
 
         int[] newTab = new int[tab.length + nbNewCells];
         for (int rank = 0; rank < tab.length; rank++) {
@@ -257,5 +260,159 @@ public class TabInteger {
         }
         TabInteger result = this.mult(power(pow - 1));
         return result;
+    }
+
+    public static TabInteger factorial(int n) {
+        TabInteger result = new TabInteger(1);
+        for (int k = 1; k <= n; k++) {
+            result = result.mult(k);
+        }
+        return result;
+    }
+
+    /**
+     * Compare with another number.
+     *
+     * @param other
+     * @return true when this number is greater than or equal to the parameter.
+     */
+    public boolean isGreaterThan(TabInteger other) {
+
+        int maxSize = Math.max(this.tab.length, other.tab.length);
+        int minSize = Math.min(this.tab.length, other.tab.length);
+
+        TabInteger a = this;
+        TabInteger b = other;
+
+        if (a.tab.length < maxSize) {
+            a = new TabInteger(this);
+            a.expandTab(maxSize - minSize);
+        } else if (b.tab.length < maxSize) {
+            b = new TabInteger(other);
+            b.expandTab(maxSize - minSize);
+        }
+
+        for (int rank = maxSize - 1; rank >= 0; rank--) {
+            if (a.tab[rank] < b.tab[rank]) {
+                return false;
+            } else if (a.tab[rank] > b.tab[rank]) {
+                return true;
+            }
+        }
+        return true; // Numbers are equal
+    }
+
+    public boolean isLowerThan(TabInteger other) {
+        return !this.isGreaterThan(other) || this.equals(other);
+    }
+
+    /**
+     * Tell if the two numbers are equal by value.
+     *
+     * @param other
+     * @return
+     */
+    public boolean equals(TabInteger other) {
+
+        int maxSize = Math.max(this.tab.length, other.tab.length);
+        int minSize = Math.min(this.tab.length, other.tab.length);
+
+        TabInteger a = this;
+        TabInteger b = other;
+
+        if (a.tab.length < maxSize) {
+            a = new TabInteger(this);
+            a.expandTab(maxSize - minSize);
+        } else if (a.tab.length > maxSize) {
+            b = new TabInteger(other);
+            b.expandTab(maxSize - minSize);
+        }
+
+        for (int rank = 0; rank < maxSize; rank++) {
+            if (a.tab[rank] != b.tab[rank]) {
+                // At least one difference
+                return false;
+            }
+        }
+        // We scanned everything without finding any difference.
+        return true;
+    }
+
+    /**
+     * Compute a division of a TabInteger by a standard integer.
+     *
+     * @param divisor
+     * @return a new TabInteger, equal to this number divided by the divisor.
+     */
+    public TabInteger divide(int divisor) {
+        TabInteger result = new TabInteger(this);
+        if (divisor == 1) {
+            return result;
+        }
+
+        // Start with a lower bound for the quotient.
+        while (result.mult(divisor).isGreaterThan(this)) {
+            result.shiftRight(1);
+        }
+        // At this step result is lower than or equal to the actual quotient.
+
+        // Increase the result as much as possible without res*div getting larger than this.
+        int addendum;
+        for (int rank = result.tab.length - 1; rank >= 0; rank--) {
+            addendum = maxCellValue;
+            while (addendum > 0) {
+                do {
+                    result.tab[rank] += addendum;
+                } while (result.mult(divisor).isLowerThan(this));
+
+                if (!result.mult(divisor).equals(this)) {
+                    // We added too much
+                    result.tab[rank] -= addendum;
+                }
+
+                result.carry();
+
+                addendum = addendum / 10;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Return this number as the built-in Java type. If this number is
+     * greater than the maximum integer value allowed, behavior is undefined.
+     *
+     * @return
+     */
+    public long toInt() {
+        int result = 0;
+        int powerOfTen = 1;
+        for (int chunk : tab) {
+            result += chunk * powerOfTen;
+            powerOfTen *= 10000;
+        }
+        return result;
+    }
+
+    /**
+     * Shift all digits to the right (in base 10).
+     *
+     * @param nbSteps
+     */
+    public void shiftRight(double nbSteps) {
+        if (nbSteps <= 0) {
+            // Done.
+        } else if (nbSteps < Math.log(maxCellValue)) {
+            for (int step = 0; step < nbSteps; step++) {
+                int remainder = 0;
+                for (int rank = tab.length - 1; rank >= 0; rank--) {
+                    int value = tab[rank];
+                    int quotient = value / 10;
+                    tab[rank] = quotient + remainder * maxCellValue / 10;
+                    remainder = value - 10 * quotient;
+                }
+            }
+        }
     }
 }
